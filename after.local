@@ -1,0 +1,7 @@
+#! /bin/sh
+
+/usr/sbin/rcwickedd-dhcp6 stop
+
+# Mapping des touches sans F7 ni F10
+
+/bin/loadkeys /sources/savKey

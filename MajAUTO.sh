@@ -4,25 +4,14 @@
 # @Last modified time: 09-Fev-2017
 
 
-if [ ! -d /opt/sophos-av ]
 
- then 
- 
-cd /sources
-
-echo -e "/opt/sophos-av\nN\ns\nf\nN" > /sources/sophos-av/Sophos-reponse.txt
-
-/bin/chmod 777 /sources/sophos-av/Sophos-reponse.txt
-
-cd /sources/sophos-av
-
-/sources/sophos-av/install.sh --acceptlicence < /sources/sophos-av/Sophos-reponse.txt
-
-fi
+/bin/sleep 120
 
 /usr/bin/clear
 
-RAPPORT=$HOME/"RapportMajAv.txt"
+RAPPORT="/root/RapportMajAUTO.txt"
+
+/bin/date > $RAPPORT
 
 if [ -f $RAPPORT ];
 then
@@ -31,7 +20,7 @@ rm $RAPPORT
 else
 > $RAPPORT
 fi
-echo "-----------------------------------" > $RAPPORT
+echo "-----------------------------------" >> $RAPPORT
 echo "Mise à jour des antivirus ..."  >> $RAPPORT
 echo "-----------------------------------" >> $RAPPORT
 echo "Etat des mises à jours" >> $RAPPORT
@@ -79,5 +68,5 @@ echo "-----------------------------------" >> $RAPPORT
 /bin/cat $RAPPORT
 echo " *********************************************"
 echo "Mise à jour des antivirus ... 100%"
-echo "Rapport complet disponible : /root/RapportMajAv.txt"
+echo "Rapport complet disponible : /root/RapportMajAUTO.txt"
 
