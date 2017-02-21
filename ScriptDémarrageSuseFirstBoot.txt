@@ -8,64 +8,253 @@
 # The 'kiwi_type' variable will contain the format of the appliance (oem =
 # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
 #
-
 # read in some variables
-. /studio/profile
 
-if [ -f /etc/init.d/suse_studio_firstboot ]
+. /studio/profile
+. /.kconfig
+
+
+# Création du dossier de mapping 
+
+/bin/mkdir /sources/montage
+
+# maj  auto
+
+if [ -e /sources/Rma ]
+
 then
 
-  # Put commands to be run on the first boot of your appliance here
+/sources/MajAUTO.sh
+
+fi
+
+if [ -e /sources/Rma.tmp ]
+
+then
+
+mv /sources/Rma.tmp /sources/Rma2
+
+fi
+
+if [ -e /sources/Rma2 ]
+
+then
+
+mv /sources/Rma2 /sources/Rma
+
+fi
+
+# Deuxième REBOOT
+
+
+if [ -e /sources/first_reboot1 ]
+
+then
+
+
+rm /sources/first_reboot1
+
+
+# Paramétrage réseau supplémentaires
+
+/sbin/chkconfig wickedd-dhcp6 off
+/sbin/ifup all
+
+# Activation du script after.local
+
+/sbin/chkconfig after.local on
+
+# Activation du client NTP
+
+/sbin/chkconfig ntpd on
+
+# Suppression de l'écran d'installation au boot
+
+rm /etc/issue
+mv /etc/issue.old /etc/issue
+
+# Création d'un fichier temporaire pour Activer les Maj auto dans 2 démarrages
+
+> /sources/Rma.tmp
+
+# Débloquage de l'accès Root au prochain démarrage
+
+rm /etc/securetty
+mv /etc/securetty.old /etc/securetty
+
+# REBOOT
+
+/sbin/shutdown -r now
+
+fi
+
+
+if [ -f /etc/init.d/suse_studio_firstboot ]
+
+
+then
+
+# Put commands to be run on the first boot of your appliance here
+
   echo "Running SUSE Studio first boot script..."
-  
+
+mv /etc/securetty /etc/securetty.old
+> /etc/securetty
+
+
+
 # read in some variables
+
 . /studio/profile
 
 # read in KIWI utility functions
+
 . /.kconfig
 
+# Paramétrage réseau supplémentaires
+
+
+/sbin/chkconfig wickedd-dhcp6 off
+
+
+# Changement  de l'écran d'installation au boot
+
+mv /etc/issue /etc/issue.old
+cp /sources/issue /etc/issue
+
 #======================================
+
 # Prune extraneous files
+
 #--------------------------------------
+
 # Remove all documentation
+
 docfiles=`find /usr/share/doc/packages -type f |grep -iv "copying\|license\|copyright"`
+
 rm -f $docfiles
+
 rm -rf /usr/share/info
+
 rm -rf /usr/share/man
 
+
 #=====================================
+
 # Install Scan progs
+
 #=====================================
 
 cd /sources
-rpm -ivh cav-linux_x64.rpm
 
 #=====================================
+
+# Installation  des sources ZAVD
+
+#=====================================
+
+/bin/cp /sources/zavd/zavd.conf /etc/zav/
+
+/opt/zav/bin/zavd --restart
+
+#=====================================
+
 # Copie des sources FPROT
+
 #=====================================
 
 cp -R /sources/f-prot/ /opt
+
 cd /opt/f-prot
 
 #=====================================
-# Creation fichier de r�ponse de FPROT
+
+# Creation fichier de réponse de FPROT
+
 #=====================================
 
 echo -e "EOF\nY\n/usr/local/bin\nY\n/usr/local/man/man8\n/usr/local/man/man1\n/usr/local/man/man5\n/opt/f-prot/doc/man/fpupdate.8\nY\n/usr/local/man/man1\nY\nY\nEOF" > /opt/f-prot/f-prot-reponse.txt
 
 #=====================================
+
 # Installation de F-PROT
+
 #=====================================
 
 /opt/f-prot/install-f-prot.pl < /opt/f-prot/f-prot-reponse.txt
 
 #=====================================
-# Installation de Sophos
+
+# Creation fichier de réponse de SOPHOS
+
 #=====================================
 
-/sources/sophos-av/install.sh /opt/sophos-av --automatic --acceptlicense --live-protection[=False]
+cd /sources
 
+echo -e "/opt/sophos-av\nN\ns\nf\nN" > /sources/sophos-av/Sophos-reponse.txt
+
+chmod 777 /sources/sophos-av/Sophos-reponse.txt
+
+
+#=====================================
+
+# Installation de Sophos
+
+#=====================================
+
+
+
+cd /sources/sophos-av
+
+/sources/sophos-av/install.sh --acceptlicence < Sophos-reponse.txt 
+
+rm /etc/systemd/system/multi-user.target.wants/sshd.service
+
+
+
+ if [ -e /sources/first_reboot ]
+
+ then
+
+mv /sources/first_reboot /sources/first_reboot1
+
+# Paramétrage réseau : Désactivation IPV6
+
+echo -e "net.ipv6.conf.all.disable_ipv6 = 1" > /etc/sysctl.conf
+
+# REBOOT
+
+/sbin/shutdown -r 2
+
+ fi
 
 exit 0
+
+fi
+
+
+#-------------------------------------------------------------------
+
+# Installation de Sophos si le repertoire /opt/sophos-av n'est pas présent
+
+#-------------------------------------------------------------------
+
+
+if [ ! -d /opt/sophos-av ]
+
+ then 
+
+/sbin/ifup all
+
+cd /sources
+
+echo -e "/opt/sophos-av\nN\ns\nf\nN" > /sources/sophos-av/Sophos-reponse.txt
+
+chmod 777 /sources/sophos-av/Sophos-reponse.txt
+
+cd /sources/sophos-av
+
+/sources/sophos-av/install.sh --acceptlicence < Sophos-reponse.txt
+
 
 fi
